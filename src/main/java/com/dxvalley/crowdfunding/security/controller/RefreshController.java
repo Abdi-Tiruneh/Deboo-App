@@ -5,7 +5,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.dxvalley.crowdfunding.security.jwt.JwtUtils;
+import com.dxvalley.crowdfunding.security.jwt.JwtTokenUtil;
 import com.dxvalley.crowdfunding.security.service.CustomUserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,13 +37,13 @@ public class RefreshController {
 
         String refreshToken = authorizationHeader.substring("Bearer ".length());
         try {
-            Algorithm algorithm = Algorithm.HMAC256(JwtUtils.getSecretKey().getBytes());
+            Algorithm algorithm = Algorithm.HMAC256(JwtTokenUtil.getSecretKey().getBytes());
             JWTVerifier verifier = JWT.require(algorithm).build();
             DecodedJWT decodedJWT = verifier.verify(refreshToken);
             String username = decodedJWT.getSubject();
-            User user = (User) customUserDetailsService.loadUserByUsername(username);
+            UserDetails user = customUserDetailsService.loadUserByUsername(username);
 
-            String accessToken = JwtUtils.generateAccessToken(user, request);
+            String accessToken = JwtTokenUtil.generateAccessToken(user, request);
             Map<String, String> tokens = Collections.singletonMap("access_token", accessToken);
 
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);

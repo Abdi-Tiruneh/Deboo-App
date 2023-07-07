@@ -31,7 +31,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
     private final EmailServiceImpl emailService;
     private final DateTimeFormatter dateTimeFormatter;
     private final CampaignUtils campaignUtils;
-    @Value("${APP_URL.INVITATION}")
+    @Value("${appUrl.collaborator}")
     private String invitationLink;
 
     public List<CollaboratorResponse> getCollaboratorByCampaignId(Long campaignId) {

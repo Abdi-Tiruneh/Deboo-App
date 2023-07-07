@@ -1,6 +1,6 @@
 package com.dxvalley.crowdfunding.security.service;
 
-import com.dxvalley.crowdfunding.exception.customException.BlockedUserException;
+import com.dxvalley.crowdfunding.exception.customException.BannedUserException;
 import com.dxvalley.crowdfunding.userManager.user.UserRepository;
 import com.dxvalley.crowdfunding.userManager.user.UserStatus;
 import com.dxvalley.crowdfunding.userManager.user.Users;
@@ -23,13 +23,13 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final DateTimeFormatter dateTimeFormatter;
 
     @Override
-    public UserDetails loadUserByUsername(String username) {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Users user = userRepository.findByUsername(username).orElseThrow(
                 () -> new UsernameNotFoundException("There is no user with this username")
         );
 
         if (user.getUserStatus().equals(UserStatus.BANNED))
-            throw new BlockedUserException("Your account has been temporarily blocked. Please admins for further assistance.");
+            throw new BannedUserException("Your account has been temporarily banned. Please admins for further assistance.");
 
         Collection<SimpleGrantedAuthority> authorities = user.getAuthorities().stream()
                 .map(authority -> new SimpleGrantedAuthority(authority.getName()))
