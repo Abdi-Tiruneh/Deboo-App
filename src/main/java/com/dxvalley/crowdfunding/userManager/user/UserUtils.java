@@ -78,7 +78,7 @@ public class UserUtils {
 
     public void checkAccountActive(Users user) {
         if (user.getUserStatus() == UserStatus.BANNED) {
-            throw new BlockedUserException("The user account is currently banned.");
+            throw new BannedUserException("The user account is currently banned.");
         }
     }
 }

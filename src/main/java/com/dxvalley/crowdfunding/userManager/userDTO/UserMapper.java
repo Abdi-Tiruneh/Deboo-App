@@ -8,7 +8,15 @@ public class UserMapper {
         return UserResponse.builder().userId(user.getUserId()).username(user.getUsername()).fullName(user.getFullName())
                 .address(user.getAddress())
                 .email(user.getEmail())
-                .verified(user.isVerified() ? "YES" : "NO").userStatus(user.getUserStatus()).createdAt(user.getCreatedAt()).editedAt(user.getEditedAt()).avatarUrl(user.getAvatarUrl()).biography(user.getBiography()).contributions(user.getContributions()).amountSpentInBirr(user.getTotalAmountSpent()).build();
+                .verified(user.isVerified() ? "YES" : "NO")
+                .userStatus(user.getUserStatus())
+                .createdAt(user.getCreatedAt())
+                .editedAt(user.getEditedAt())
+                .avatarUrl(user.getAvatarUrl())
+                .biography(user.getBiography())
+                .contributions(user.getContributions())
+                .amountSpentInBirr(user.getTotalAmountSpent())
+                .build();
     }
 }
 

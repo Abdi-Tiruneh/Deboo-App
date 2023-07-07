@@ -11,7 +11,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
 
@@ -49,11 +49,11 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult) throws IOException {
-        User user = (User) authResult.getPrincipal();
+        UserDetails user = (UserDetails) authResult.getPrincipal();
 
         Map<String, String> tokens = new HashMap<>();
-        tokens.put("access_token", JwtUtils.generateAccessToken(user, request));
-        tokens.put("refresh_token", JwtUtils.generateRefreshToken(user, request));
+        tokens.put("access_token", JwtTokenUtil.generateAccessToken(user, request));
+        tokens.put("refresh_token", JwtTokenUtil.generateRefreshToken(user, request));
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         new ObjectMapper().writeValue(response.getOutputStream(), tokens);
     }

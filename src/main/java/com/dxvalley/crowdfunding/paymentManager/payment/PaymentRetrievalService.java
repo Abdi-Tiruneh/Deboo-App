@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface PaymentRetrievalService {
     List<PaymentResponse> getPaymentByCampaignId(Long campaignId);
-    List<PaymentResponse> getPaymentByMe();
+    List<PaymentResponse> myPayments();
 }

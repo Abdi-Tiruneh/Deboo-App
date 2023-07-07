@@ -5,16 +5,17 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class EbirrPaymentReqDTO {
+public class PaymentRequest {
     private Long userId;
     private @NotNull(message = "Campaign ID cannot be null")
     Long campaignId;
-    private @NotNull(message = "Amount cannot be null") Double amount;
-    private @NotBlank(message = "phoneNumber cannot be blank"
-    ) String phoneNumber;
-    private String firstName;
-    private String lastName;
+    private @NotNull(message = "Amount cannot be null")
+    Double amount;
+    private @NotBlank(message = "contact cannot be blank")
+    String contact;
+    String firstName;
+    String lastName;
+    String returnUrl;
     private boolean isAnonymous;
     private String orderId;
-
 }
