@@ -5,10 +5,7 @@ import com.dxvalley.crowdfunding.campaign.campaign.CampaignRepository;
 import com.dxvalley.crowdfunding.campaign.campaign.CampaignStage;
 import com.dxvalley.crowdfunding.exception.customException.ForbiddenException;
 import com.dxvalley.crowdfunding.exception.customException.ResourceNotFoundException;
-import com.dxvalley.crowdfunding.paymentManager.cooPass.CooPassVerifyResponse;
-import com.dxvalley.crowdfunding.paymentManager.paymentDTO.ChapaDTO;
-import com.dxvalley.crowdfunding.paymentManager.paymentDTO.EbirrPaymentReqDTO;
-import com.dxvalley.crowdfunding.paymentManager.paymentDTO.PaymentRequestDTO;
+import com.dxvalley.crowdfunding.paymentManager.paymentDTO.PaymentRequest;
 import com.dxvalley.crowdfunding.paymentManager.paymentGateway.PaymentGatewayService;
 import com.dxvalley.crowdfunding.paymentManager.paymentGateway.PaymentProcessor;
 import com.dxvalley.crowdfunding.userManager.user.UserUtils;
@@ -32,136 +29,64 @@ public class PaymentUtils {
     private final DateTimeFormatter dateTimeFormatter;
 
     public Payment getPaymentByOrderId(String orderId) {
-        return this.paymentRepository.findPaymentByOrderId(orderId).orElseThrow(() -> {
-            return new ResourceNotFoundException("Payment not found");
+        return paymentRepository.findPaymentByOrderId(orderId).orElseThrow(() -> {
+            throw new ResourceNotFoundException("Payment not found");
         });
     }
 
     public Campaign getCampaignById(Long campaignId) {
-        return this.campaignRepository.findById(campaignId).orElseThrow(() -> {
+        return campaignRepository.findById(campaignId).orElseThrow(() -> {
             return new ResourceNotFoundException("Campaign not found");
         });
     }
 
     public Users getUserById(Long userId) {
-        return userId != null ? this.userUtils.utilGetUserByUserId(userId) : null;
+        return userId != null ? userUtils.utilGetUserByUserId(userId) : null;
     }
 
     //Validates the preconditions for payment processing.
     public void validatePaymentPreconditions(Long campaignId, PaymentProcessor paymentProcessor) {
-        Campaign campaign = this.getCampaignById(campaignId);
-        boolean isActive = this.paymentGatewayService.isPaymentGatewayActive(paymentProcessor.name());
-        if (!isActive) {
+        boolean isActive = paymentGatewayService.isPaymentGatewayActive(paymentProcessor.name());
+        if (!isActive)
             throw new ForbiddenException("The payment gateway is currently unavailable. Please try again later.");
-        } else if (campaign.getCampaignStage() != CampaignStage.FUNDING) {
+
+        Campaign campaign = getCampaignById(campaignId);
+        if (campaign.getCampaignStage() != CampaignStage.FUNDING)
             throw new ForbiddenException("This campaign is not accepting payments at the moment. Please check back later.");
-        }
     }
 
 
-    // Creates a Payment object from a EbirrPaymentReqDTO request.
-    public Payment createPaymentFromEbirrRequestDTO(EbirrPaymentReqDTO ebirrPaymentReqDTO) {
-        Users user = getUserById(ebirrPaymentReqDTO.getUserId());
-        Campaign campaign = getCampaignById(ebirrPaymentReqDTO.getCampaignId());
+    public Payment createPaymentFromPaymentReqDTO(PaymentRequest paymentRequest, PaymentProcessor paymentProcessor) {
+        Campaign campaign = getCampaignById(paymentRequest.getCampaignId());
+        Users user = getUserById(paymentRequest.getUserId());
         String orderId = generateUniqueOrderId(campaign.getFundingType().getName());
 
         Payment payment = new Payment();
-
-        payment.setPayerFullName(ebirrPaymentReqDTO.getFirstName() + " " + ebirrPaymentReqDTO.getLastName());
-        payment.setPaymentContactInfo(ebirrPaymentReqDTO.getPhoneNumber());
-        payment.setTransactionOrderedDate(LocalDateTime.now().format(dateTimeFormatter));
-        payment.setIsAnonymous(ebirrPaymentReqDTO.isAnonymous());
-        payment.setAmount(ebirrPaymentReqDTO.getAmount());
-        payment.setCurrency("ETB");
-        payment.setPaymentProcessor(PaymentProcessor.EBIRR);
-        payment.setOrderId(orderId);
-        payment.setUser(user);
-        payment.setCampaign(campaign);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
-
-        return payment;
-    }
-
-
-    public Payment createPaymentFromChapaPaymentReqDTO(ChapaDTO chapaDTO) {
-        Campaign campaign = this.getCampaignById(chapaDTO.getCampaignId());
-        Users user = this.getUserById(chapaDTO.getUserId());
-        String orderId = this.generateUniqueOrderId(campaign.getFundingType().getName());
-
-        Payment payment = new Payment();
-
-        payment.setPayerFullName(chapaDTO.getFirstName() + " " + chapaDTO.getLastName());
-        payment.setPaymentContactInfo(chapaDTO.getEmail());
-        payment.setTransactionOrderedDate(LocalDateTime.now().format(this.dateTimeFormatter));
-        payment.setIsAnonymous(chapaDTO.isAnonymous());
-        payment.setAmount(chapaDTO.getAmount());
-        payment.setCurrency("ETB");
-        payment.setPaymentProcessor(PaymentProcessor.CHAPA);
-        payment.setOrderId(orderId);
-        payment.setUser(user);
-        payment.setCampaign(campaign);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
-        return payment;
-    }
-
-
-    // Creates a Payment object from a ChapaPaymentReqDTO request.
-    public Payment createPaymentFromChapaPaymentReqDTO(PaymentRequestDTO chapaPaymentReqDTO) {
-        Campaign campaign = getCampaignById(chapaPaymentReqDTO.getCampaignId());
-        Users user = getUserById(chapaPaymentReqDTO.getUserId());
-        String orderId = generateUniqueOrderId(campaign.getFundingType().getName());
-
-        Payment payment = new Payment();
-
-        payment.setPayerFullName(chapaPaymentReqDTO.getFirstName() + " " + chapaPaymentReqDTO.getLastName());
-        payment.setPaymentContactInfo(chapaPaymentReqDTO.getPaymentContactInfo());
-        payment.setTransactionOrderedDate(LocalDateTime.now().format(dateTimeFormatter));
-        payment.setIsAnonymous(chapaPaymentReqDTO.getIsAnonymous());
-        payment.setAmount(chapaPaymentReqDTO.getAmount());
-        payment.setCurrency("ETB");
-        payment.setPaymentProcessor(PaymentProcessor.CHAPA);
-        payment.setOrderId(orderId);
-        payment.setUser(user);
-        payment.setCampaign(campaign);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
-
-        return payment;
-    }
-
-    public Payment createPaymentFromRequestDTO(PaymentRequestDTO paymentRequest, Campaign campaign, Users user, String orderId) {
-        Payment payment = new Payment();
-
         payment.setPayerFullName(paymentRequest.getFirstName() + " " + paymentRequest.getLastName());
-        payment.setPaymentContactInfo(paymentRequest.getPaymentContactInfo());
-        payment.setTransactionOrderedDate(LocalDateTime.now().format(this.dateTimeFormatter));
-        payment.setIsAnonymous(paymentRequest.getIsAnonymous());
+        payment.setPaymentContactInfo(paymentRequest.getContact());
+        payment.setTransactionOrderedDate(LocalDateTime.now().format(dateTimeFormatter));
+        payment.setIsAnonymous(paymentRequest.isAnonymous());
         payment.setAmount(paymentRequest.getAmount());
         payment.setCurrency("ETB");
-        payment.setPaymentProcessor(PaymentProcessor.CHAPA);
+        payment.setPaymentProcessor(paymentProcessor);
         payment.setOrderId(orderId);
         payment.setUser(user);
         payment.setCampaign(campaign);
         payment.setPaymentStatus(PaymentStatus.PENDING);
-
         return payment;
     }
 
-    public void handleFailedPayment(Payment payment) {
-        payment.setPaymentStatus(PaymentStatus.FAILED);
-        this.paymentRepository.save(payment);
-    }
 
-    @Transactional
-    public void updatePaymentFromCooPassVerifyResponse(Payment payment, CooPassVerifyResponse cooPassVerifyResponse) {
-        payment.setTransactionCompletedDate(cooPassVerifyResponse.getData().getCompletedAt());
-        payment.setTransactionId(cooPassVerifyResponse.getData().getTransactionId());
-        this.paymentRepository.save(payment);
+    public void handleFailedPayment(String orderId) {
+        Payment payment = getPaymentByOrderId(orderId);
+        payment.setPaymentStatus(PaymentStatus.FAILED);
+        paymentRepository.save(payment);
     }
 
     @Transactional
     public double updateCampaignFromPayment(Payment payment) {
         Campaign campaign = payment.getCampaign();
-        List<Payment> payments = this.paymentRepository.findByCampaignIdAndPaymentStatus(campaign.getId(), PaymentStatus.SUCCESS);
+        List<Payment> payments = paymentRepository.findByCampaignIdAndPaymentStatus(campaign.getId(), PaymentStatus.SUCCESS);
         if (payments.isEmpty()) {
             return 0.0;
         } else {
@@ -170,11 +95,10 @@ public class PaymentUtils {
             }).sum();
             campaign.setNumberOfBackers(campaign.getNumberOfBackers() + 1);
             campaign.setTotalAmountCollected(totalAmountCollected);
-            this.campaignRepository.save(campaign);
+            campaignRepository.save(campaign);
             return totalAmountCollected;
         }
     }
-
 
     // Generates a unique order ID based on the funding type.
     public String generateUniqueOrderId(String fundingType) {

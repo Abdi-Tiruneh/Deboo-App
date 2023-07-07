@@ -1,101 +1,77 @@
 package com.dxvalley.crowdfunding.paymentManager.cooPass;
 
 import com.dxvalley.crowdfunding.exception.customException.PaymentCannotProcessedException;
-import com.dxvalley.crowdfunding.exception.customException.ResourceNotFoundException;
-import com.dxvalley.crowdfunding.paymentManager.paymentDTO.PaymentRequestDTO;
+import com.dxvalley.crowdfunding.paymentManager.payment.PaymentUtils;
+import com.dxvalley.crowdfunding.paymentManager.paymentDTO.PaymentRequest;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.http.*;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CooPassService {
-    private final String paymentInitiationURI;
-    private final String paymentVerificationURI;
-    private final String secretKey;
-    private final String clientId;
-    private final String apiKey;
+    private final CooPassProperties cooPassProperties;
+    private final RestTemplate restTemplate;
+    private final PaymentUtils paymentUtils;
+    @Value("${appUrl.paymentCallBack}")
+    private String callBack;
 
-
-    public CooPassService(
-            @Value("${COOPASS.PAYMENT_INITIATION_URI}") String paymentInitiationURI,
-            @Value("${COOPASS.PAYMENT_VERIFICATION_URI}") String paymentVerificationURI,
-            @Value("${COOPASS.SECRET_KEY}") String secretKey,
-            @Value("${COOPASS.CLIENT_ID}") String clientId,
-            @Value("${COOPASS.API_KEY}") String apiKey) {
-        this.paymentInitiationURI = paymentInitiationURI;
-        this.secretKey = secretKey;
-        this.clientId = clientId;
-        this.apiKey = apiKey;
-        this.paymentVerificationURI = paymentVerificationURI;
+    public CooPassRequestData createRequestData(PaymentRequest paymentRequest) {
+        return CooPassRequestData.builder()
+                .secrateKey(cooPassProperties.getSecrateKey())
+                .clientId(cooPassProperties.getClientId())
+                .apiKey(cooPassProperties.getApiKey())
+                .callBackUrl(callBack)
+                .returnUrl(paymentRequest.getReturnUrl())
+                .orderId(paymentRequest.getOrderId())
+                .currency("ETB")
+                .phoneNumber(paymentRequest.getContact())
+                .amount(String.valueOf(paymentRequest.getAmount()))
+                .build();
     }
 
-    /**
-     * Initializes a payment with cooPass.
-     *
-     * @param paymentRequestDTO The cooPass request DTO.
-     * @return The cooPass initialize response.
-     * @throws RuntimeException if there is an error while initiating the payment request.
-     */
-    public CooPassInitResponse initializePayment(PaymentRequestDTO paymentRequestDTO) {
+    public CooPassInitResponse sendPaymentRequest(PaymentRequest paymentRequest) {
+        CooPassRequestData cooPassRequestData = createRequestData(paymentRequest);
         try {
-            RestTemplate restTemplate = new RestTemplate();
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("clientId", clientId);
-            requestBody.put("secretKey", secretKey);
-            requestBody.put("callBackUrl", "http://192.168.137.76:8181/api/payment/cooPassVerify/" + paymentRequestDTO.getOrderId());
-            requestBody.put("returnUrl", paymentRequestDTO.getReturnUrl());
-            requestBody.put("apiKey", apiKey);
-            requestBody.put("orderId", paymentRequestDTO.getOrderId());
-            requestBody.put("currency", "ETB");
-            requestBody.put("amount", paymentRequestDTO.getAmount());
+            HttpEntity<CooPassRequestData> request = new HttpEntity(cooPassRequestData, headers);
+            ResponseEntity<CooPassInitResponse> paymentResponse = restTemplate.postForEntity(cooPassProperties.getUrl(), request, CooPassInitResponse.class);
 
-            HttpEntity<String> request = new HttpEntity<String>(requestBody.toString(), headers);
-            ResponseEntity<CooPassInitResponse> response = restTemplate.postForEntity(paymentInitiationURI, request, CooPassInitResponse.class);
-
-            log.info("Request to cooPass from jigii => {}|| cooPassInitializeResponse => {}", paymentRequestDTO, response.getBody());
-            return response.getBody();
-        } catch (Exception e) {
-            log.error("Cannot initiate cooPass payment request for {} request", paymentRequestDTO);
-            throw new PaymentCannotProcessedException(e.getMessage());
-        }
-    }
-
-    /**
-     * Verifies payment by sending a GET request to CooPass's API.
-     *
-     * @param orderID The unique identifier for the payment transaction.
-     * @return A CooPassVerifyResponse object containing the payment verification details.
-     * @throws ResourceNotFoundException If the payment cannot be verified.
-     */
-    public CooPassVerifyResponse verifyPayment(String orderID) {
-        try {
-            final String URI = paymentVerificationURI + orderID;
-            RestTemplate restTemplate = new RestTemplate();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.TEXT_PLAIN);
-
-            HttpEntity<String> request = new HttpEntity<>(headers);
-            ResponseEntity<CooPassVerifyResponse> response = restTemplate.exchange(URI, HttpMethod.GET, request, CooPassVerifyResponse.class);
-
-            if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("CooPassVerifyResponse for {} orderID => {}", orderID, response.getBody());
-                return response.getBody();
+            if (paymentResponse.getStatusCode().is2xxSuccessful()) {
+                return paymentResponse.getBody();
+            } else {
+                throw new PaymentCannotProcessedException("Error processing payment");
             }
-
-            log.error("Cannot Verify payment on CooPass for {} orderID", orderID);
-            throw new PaymentCannotProcessedException("Cannot verify payment");
-        } catch (Exception e) {
-            log.error("Cannot Verify payment on CooPass for {} orderID", orderID);
-            throw new PaymentCannotProcessedException("Cannot verify payment");
+        } catch (Exception ex) {
+            log.error("Error message: {}. payment request {}.",
+                     ex.getMessage(),cooPassRequestData);
+            paymentUtils.handleFailedPayment(paymentRequest.getOrderId());
+            throw new PaymentCannotProcessedException("Currently, we can't process payments with Coopass");
         }
     }
+
+}
+
+@Component
+@ConfigurationProperties(prefix = "coopass")
+@Getter
+@Setter
+class CooPassProperties {
+    private String clientId;
+    private String secrateKey;
+    private String apiKey;
+    private String url;
 }
