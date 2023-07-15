@@ -10,8 +10,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
 
 import java.time.LocalDateTime;
@@ -40,7 +42,11 @@ public class ApplicationExceptionHandler {
         return ResponseEntity.badRequest().body(errorMap);
     }
 
-    @ExceptionHandler({BadRequestException.class, MultipartException.class, HttpRequestMethodNotSupportedException.class})
+    @ExceptionHandler({BadRequestException.class,
+            MultipartException.class,
+            HttpRequestMethodNotSupportedException.class,
+            MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class,
+            IllegalArgumentException.class})
     public ResponseEntity<ExceptionResponse> handleBadRequestException(Exception ex, HttpServletRequest request) {
         return buildResponse(ex.getMessage(), request, HttpStatus.BAD_REQUEST);
     }
@@ -74,17 +80,13 @@ public class ApplicationExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(Exception ex, HttpServletRequest request) {
         HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
         String errorMessage = "An unexpected error occurred while processing your request. Please try again later or contact support.";
-        log.error("INTERNAL_SERVER_ERROR: " + ex.getMessage());
+        log.error("INTERNAL_SERVER_ERROR: " + ex.getMessage(), ex);
+        ex.printStackTrace();
         return buildResponse(errorMessage, request, httpStatus);
     }
 
     private ResponseEntity<ExceptionResponse> buildResponse(String errorMessage, HttpServletRequest request, HttpStatus httpStatus) {
-        ExceptionResponse apiException = new ExceptionResponse(
-                LocalDateTime.now().format(dateTimeFormatter),
-                httpStatus,
-                errorMessage,
-                request.getRequestURI()
-        );
+        ExceptionResponse apiException = new ExceptionResponse(LocalDateTime.now().format(dateTimeFormatter), httpStatus, errorMessage, request.getRequestURI());
         return ResponseEntity.status(httpStatus).body(apiException);
     }
 
