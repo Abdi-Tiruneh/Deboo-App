@@ -89,7 +89,7 @@ public class CampaignSharingServiceImpl implements CampaignSharingService {
 
     private CampaignSharing createNewSharing(CampaignSharingReq campaignSharingReq, String username) {
         CampaignSharing newSharing = new CampaignSharing();
-        newSharing.setCampaign(this.campaignUtils.utilGetCampaignById(campaignSharingReq.getCampaignId()));
+        newSharing.setCampaign(this.campaignUtils.getCampaignById(campaignSharingReq.getCampaignId()));
         newSharing.setUsername(username);
         newSharing.setSharingPlatform(SharingPlatform.lookup(campaignSharingReq.getSharingPlatform()));
         newSharing.setSharingTime(LocalDateTime.now().format(this.dateTimeFormatter));

@@ -7,7 +7,7 @@ import java.util.List;
 
 @Repository
 public interface CampaignLikeRepository extends JpaRepository<CampaignLike, Long> {
-    CampaignLike findByCampaignIdAndUserUserId(Long campaignId, Long userId);
+    CampaignLike findByCampaignIdAndUserUsername(Long campaignId, String userId);
 
     List<CampaignLike> findByCampaignId(Long campaignId);
 

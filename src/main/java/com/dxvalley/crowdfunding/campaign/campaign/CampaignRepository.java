@@ -1,5 +1,7 @@
 package com.dxvalley.crowdfunding.campaign.campaign;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -9,20 +11,21 @@ import java.util.Optional;
 public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     Optional<Campaign> findCampaignByIdAndCampaignStage(Long campaignId, CampaignStage campaignStage);
 
-    List<Campaign> findCampaignsByUserUsername(String username);
+    List<Campaign> findByUserUsername(String username);
 
-    List<Campaign> findCampaignsByCampaignStage(CampaignStage campaignStage);
+    Page<Campaign> findByCampaignStageIn(List<CampaignStage> campaignStages, Pageable pageable);
 
-    List<Campaign> findCampaignsByCampaignStageIn(List<CampaignStage> campaignStages);
+    Page<Campaign> findByCampaignStage(CampaignStage campaignStage, Pageable pageable);
 
-    List<Campaign> findCampaignsByFundingTypeIdAndCampaignStage(Long fundingTypeId, CampaignStage campaignStages);
+    List<Campaign> findByCampaignStage(CampaignStage campaignStage);
 
-    List<Campaign> findCampaignsByCampaignSubCategoryCampaignCategoryIdAndCampaignStageIn(Long categoryId, List<CampaignStage> campaignStages);
+    Page<Campaign> findByFundingTypeIdAndCampaignStageIn(Short fundingTypeId, List<CampaignStage> campaignStages, Pageable pageable);
 
-    List<Campaign> findCampaignsByCampaignSubCategoryIdAndCampaignStageIn(Long subCategoryId, List<CampaignStage> campaignStages);
+    Page<Campaign> findByCampaignSubCategoryCampaignCategoryIdAndCampaignStageIn(Short categoryId, List<CampaignStage> campaignStages,Pageable pageable);
+
+    Page<Campaign> findByCampaignSubCategoryIdAndCampaignStageIn(Short subCategoryId, List<CampaignStage> campaignStages, Pageable pageable);
 
     List<Campaign> findByBankAccountAccountNumber(String accountNumber);
-
 
     @Query(value = "SELECT * " +
             "FROM campaign WHERE document @@ to_tsquery(:searchValue) AND campaign_stage IN('FUNDING','COMPLETED')" +
