@@ -24,12 +24,12 @@ public class RewardServiceImpl implements RewardService {
     private final DateTimeFormatter dateTimeFormatter;
 
     public RewardResponse addReward(RewardRequest rewardRequest) {
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(rewardRequest.getCampaignId());
+        Campaign campaign = this.campaignUtils.getCampaignById(rewardRequest.getCampaignId());
         Reward reward = new Reward();
         reward.setTitle(rewardRequest.getTitle());
         reward.setDescription(rewardRequest.getDescription());
         reward.setAmountToCollect(rewardRequest.getAmountToCollect());
-        reward.setDeliveryTime(LocalDateTime.now().format(this.dateTimeFormatter));
+        reward.setDeliveryTime(rewardRequest.getDeliveryTime());
         reward.setCampaign(campaign);
         reward.setCreatedAt(LocalDateTime.now().format(this.dateTimeFormatter));
         Reward savedReward = (Reward)this.rewardRepository.save(reward);

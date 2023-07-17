@@ -14,7 +14,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 @Entity
@@ -56,21 +55,28 @@ public class Campaign {
     private String resumedAt;
     private String resumedBy;
     private String completedAt;
+
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<CampaignImage> images = new ArrayList();
+
     @OneToOne(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     private CampaignVideo video;
+
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<CampaignFile> files = new ArrayList();
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "funding_type_id", nullable = false)
     private FundingType fundingType;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "campaign_subcategory_id", nullable = false)
     private CampaignSubCategory campaignSubCategory;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
+
     @ManyToOne
     @JoinColumn(name = "bank_account_id")
     private CampaignBankAccount bankAccount;
@@ -84,13 +90,9 @@ public class Campaign {
     }
 
     public void setFiles(List<CampaignFile> campaignFiles) {
-        Iterator var2 = campaignFiles.iterator();
-
-        while(var2.hasNext()) {
-            CampaignFile campaignFile = (CampaignFile)var2.next();
+        for (CampaignFile campaignFile : campaignFiles) {
             this.addFile(campaignFile);
         }
-
     }
 
 }

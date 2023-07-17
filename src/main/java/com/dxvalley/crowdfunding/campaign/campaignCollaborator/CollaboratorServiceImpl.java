@@ -52,7 +52,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
         userUtils.verifyUser(invitee);
         userUtils.checkAccountActive(invitee);
 
-        Campaign campaign = campaignUtils.utilGetCampaignById(campaignId);
+        Campaign campaign = campaignUtils.getCampaignById(campaignId);
         Collaborator collaborator = createCollaborator(invitee, campaign);
 
         Collaborator savedCollaborator = collaboratorRepository.save(collaborator);

@@ -17,7 +17,7 @@ public class CampaignApprovalReq {
     @NotBlank(message = "Approved by field is required")
     private String approvedBy;
     @NotNull(message = "Approval status is required")
-    @Pattern(regexp = "(?i)^(ACCEPTED|REJECTED)$", message = "Approval status must be either ACCEPTED or REJECTED")
+    @Pattern(regexp = "(?i)^(ACCEPTED|REJECTED|RESUBMIT)$", message = "Approval status must be either accepted, rejected, or resubmit.")
     private String approvalStatus;
     @NotBlank(message = "Reason is required")
     private String reason;

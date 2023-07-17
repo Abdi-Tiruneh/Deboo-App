@@ -26,7 +26,7 @@ public class PromotionServiceImpl implements PromotionService {
 
     public PromotionResponse addPromotion(PromotionReq promotionReq) {
         Promotion promotion = new Promotion();
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(promotionReq.getCampaignId());
+        Campaign campaign = this.campaignUtils.getCampaignById(promotionReq.getCampaignId());
         promotion.setPromotionLink(promotionReq.getPromotionLink());
         promotion.setDescription(promotionReq.getDescription());
         promotion.setCreatedAt(LocalDateTime.now().format(this.dateTimeFormatter));

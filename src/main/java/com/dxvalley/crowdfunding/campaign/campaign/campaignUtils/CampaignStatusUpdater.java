@@ -5,7 +5,6 @@ import com.dxvalley.crowdfunding.campaign.campaign.CampaignRepository;
 import com.dxvalley.crowdfunding.campaign.campaign.CampaignStage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,7 +27,7 @@ public class CampaignStatusUpdater {
     )
     @Async("asyncExecutor")
     public void updateCampaignStatus() {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByCampaignStage(CampaignStage.FUNDING);
+        List<Campaign> campaigns = this.campaignRepository.findByCampaignStage(CampaignStage.FUNDING);
         LocalDateTime currentDateTime = LocalDateTime.now();
         Iterator iterator = campaigns.iterator();
 

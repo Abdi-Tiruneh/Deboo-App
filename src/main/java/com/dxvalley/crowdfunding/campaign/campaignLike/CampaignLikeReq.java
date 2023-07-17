@@ -7,6 +7,4 @@ import lombok.Data;
 public class CampaignLikeReq {
     @NotNull
     private Long campaignId;
-    @NotNull
-    private Long userId;
 }

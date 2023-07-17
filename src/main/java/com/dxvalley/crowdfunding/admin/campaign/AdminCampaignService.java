@@ -33,7 +33,7 @@ public class AdminCampaignService {
     }
 
     public CampaignDTO suspendCampaign(Long campaignId) {
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(campaignId);
+        Campaign campaign = this.campaignUtils.getCampaignById(campaignId);
         this.campaignUtils.validateCampaignStage(campaign, CampaignStage.FUNDING, "Campaign cannot be suspended unless it is in the funding stage");
         campaign.setCampaignStage(CampaignStage.SUSPENDED);
         campaign.setSuspendedAt(LocalDateTime.now().format(this.dateTimeFormatter));
@@ -42,7 +42,7 @@ public class AdminCampaignService {
     }
 
     public CampaignDTO resumeCampaign(Long campaignId) {
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(campaignId);
+        Campaign campaign = this.campaignUtils.getCampaignById(campaignId);
         this.campaignUtils.validateCampaignStage(campaign, CampaignStage.SUSPENDED, "Campaign cannot be resumed unless it is in the suspended stage");
         campaign.setCampaignStage(CampaignStage.FUNDING);
         campaign.setResumedAt(LocalDateTime.now().format(this.dateTimeFormatter));

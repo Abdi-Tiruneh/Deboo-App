@@ -42,7 +42,7 @@ public class CampaignBankAccountServiceImpl implements CampaignBankAccountServic
     }
 
     public CampaignBankAccount addBankAccount(AccountAddReq accountAddReq) {
-        Campaign campaign = campaignUtils.utilGetCampaignById(accountAddReq.getCampaignId());
+        Campaign campaign = campaignUtils.getCampaignById(accountAddReq.getCampaignId());
         String accountNumber = accountAddReq.getAccountNumber();
         String accountOwner = accountAddReq.getAccountOwner();
         validateBankAccount(accountNumber, campaign);

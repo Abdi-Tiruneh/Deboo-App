@@ -12,14 +12,18 @@ import com.dxvalley.crowdfunding.campaign.campaignReward.dto.RewardResponse;
 import com.dxvalley.crowdfunding.exception.customException.ResourceNotFoundException;
 import com.dxvalley.crowdfunding.paymentManager.payment.PaymentRetrievalService;
 import com.dxvalley.crowdfunding.paymentManager.paymentDTO.PaymentResponse;
+import com.dxvalley.crowdfunding.utils.CurrentLoggedInUser;
+import com.dxvalley.crowdfunding.utils.PaginationUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class CampaignRetrievalServiceImpl implements CampaignRetrievalService {
     private final CampaignRepository campaignRepository;
@@ -27,39 +31,92 @@ public class CampaignRetrievalServiceImpl implements CampaignRetrievalService {
     private final RewardService rewardService;
     private final PromotionService promotionService;
     private final PaymentRetrievalService paymentRetrievalService;
+    private final CurrentLoggedInUser currentLoggedInUser;
     private final CampaignMapper campaignMapper;
     private final CampaignUtils campaignUtils;
 
-    public List<CampaignDTO> getCampaigns() {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByCampaignStageIn(List.of(CampaignStage.FUNDING, CampaignStage.COMPLETED));
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("Currently, there are no campaigns available.");
+    private final List<CampaignStage> campaignStages = List.of(CampaignStage.FUNDING, CampaignStage.COMPLETED);
 
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
+    @Override
+    public ResponseEntity<List<CampaignDTO>> getCampaigns(Pageable pageable) {
+        Page<Campaign> campaignPage = campaignRepository.findByCampaignStageIn(campaignStages, pageable);
+        if (campaignPage.isEmpty())
+            throw new ResourceNotFoundException("Currently, there is no campaign.");
 
+        return buildResponse(campaignPage);
     }
 
-    public List<CampaignDTO> getCampaignsByStage(String campaignStage) {
-        CampaignStage result = CampaignStage.lookup(campaignStage);
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByCampaignStage(result);
+    @Override
+    public ResponseEntity<List<CampaignDTO>> getCampaignsByStage(String stage, Pageable pageable) {
+        CampaignStage campaignStage = CampaignStage.lookup(stage);
+        Page<Campaign> campaignPage = campaignRepository.findByCampaignStage(campaignStage, pageable);
+        if (campaignPage.isEmpty())
+            throw new ResourceNotFoundException("There is no campaign at the " + campaignStage + " stage.");
+
+        return buildResponse(campaignPage);
+    }
+
+    @Override
+    public ResponseEntity<List<CampaignDTO>> getCampaignByCategory(Short categoryId, Pageable pageable) {
+        Page<Campaign> campaignPage = campaignRepository.findByCampaignSubCategoryCampaignCategoryIdAndCampaignStageIn(categoryId, campaignStages, pageable);
+        if (campaignPage.isEmpty())
+            throw new ResourceNotFoundException("There is no campaign available for this category.");
+
+        return buildResponse(campaignPage);
+    }
+
+    public ResponseEntity<List<CampaignDTO>> getCampaignBySubCategory(Short subCategoryId, Pageable pageable) {
+        Page<Campaign> campaignPage = campaignRepository.findByCampaignSubCategoryIdAndCampaignStageIn(subCategoryId, campaignStages, pageable);
+        if (campaignPage.isEmpty())
+            throw new ResourceNotFoundException("There is no campaign available for this sub-category.");
+
+        return buildResponse(campaignPage);
+    }
+
+    public ResponseEntity<List<CampaignDTO>> getCampaignsByFundingType(Short fundingTypeId, Pageable pageable) {
+        Page<Campaign> campaignPage = campaignRepository.findByFundingTypeIdAndCampaignStageIn(fundingTypeId, campaignStages, pageable);
+        if (campaignPage.isEmpty())
+            throw new ResourceNotFoundException("There are no campaigns available for this funding type.");
+
+        return buildResponse(campaignPage);
+    }
+
+    @Override
+    public List<CampaignDTO> getCampaignsByOwner() {
+        String username = currentLoggedInUser.getUserName();
+        List<Campaign> campaigns = campaignUtils.getCampaignsByUserUsername(username);
+        return buildResponse(campaigns);
+    }
+
+    @Override
+    public List<CampaignDTO> getCampaignsByOwner(String username) {
+        List<Campaign> campaigns = campaignUtils.getCampaignsByUserUsername(username);
+        return buildResponse(campaigns);
+    }
+
+    public List<CampaignDTO> searchCampaigns(String searchParam) {
+        String[] searchParamArray = searchParam.trim().split("\\W+");
+        String searchPattern = String.join("|", searchParamArray);
+        List<Campaign> campaigns = campaignRepository.searchForCampaigns(searchPattern);
         if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("There are no campaigns available at the " + campaignStage + " stage.");
+            throw new ResourceNotFoundException("No campaigns found with this search parameter.");
 
         return campaigns.stream().map(campaignMapper::toDTO).toList();
     }
 
-    public CampaignDTO getCampaignById(Long campaignId) {
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(campaignId);
-        CampaignDTO campaignDTO = this.campaignMapper.toDTOById(campaign);
-        this.setAdditionalDetails(campaignDTO, campaignId);
+    @Override
+    public CampaignDTO getCampaignById(Long id) {
+        Campaign campaign = campaignUtils.getCampaignById(id);
+        CampaignDTO campaignDTO = campaignMapper.toDTOById(campaign);
+        setAdditionalDetails(campaignDTO, id);
         return campaignDTO;
     }
 
-    private void setAdditionalDetails(CampaignDTO campaignDTO, Long campaignId) {
-        List<CollaboratorResponse> collaborators = this.collaboratorService.getCollaboratorByCampaignId(campaignId);
-        List<RewardResponse> rewards = this.rewardService.getByCampaign(campaignId);
-        List<PromotionResponse> promotions = this.promotionService.getPromotionByCampaign(campaignId);
-        List<PaymentResponse> contributors = this.paymentRetrievalService.getPaymentByCampaignId(campaignId);
+    private void setAdditionalDetails(CampaignDTO campaignDTO, Long id) {
+        List<CollaboratorResponse> collaborators = collaboratorService.getCollaboratorByCampaignId(id);
+        List<RewardResponse> rewards = rewardService.getByCampaign(id);
+        List<PromotionResponse> promotions = promotionService.getPromotionByCampaign(id);
+        List<PaymentResponse> contributors = paymentRetrievalService.getPaymentByCampaignId(id);
         campaignDTO.setCollaborators(collaborators);
         campaignDTO.setRewards(rewards);
         campaignDTO.setPromotions(promotions);
@@ -67,46 +124,22 @@ public class CampaignRetrievalServiceImpl implements CampaignRetrievalService {
         campaignDTO.setNumberOfBackers(contributors.size());
     }
 
-    public List<CampaignDTO> getCampaignByCategory(Long categoryId) {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByCampaignSubCategoryCampaignCategoryIdAndCampaignStageIn(categoryId, List.of(CampaignStage.FUNDING, CampaignStage.COMPLETED));
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("There are no campaigns available for this category.");
+    private ResponseEntity<List<CampaignDTO>> buildResponse(Page<Campaign> campaignPage) {
+        List<CampaignDTO> campaignDTOList = campaignPage.stream()
+                .map(campaignMapper::toDTO)
+                .toList();
 
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
+        HttpHeaders responseHeaders = PaginationUtils.setPaginationHeaders(campaignPage);
+
+        return ResponseEntity.ok()
+                .headers(responseHeaders)
+                .body(campaignDTOList);
     }
 
-    public List<CampaignDTO> getCampaignBySubCategory(Long subCategoryId) {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByCampaignSubCategoryIdAndCampaignStageIn(subCategoryId, List.of(CampaignStage.FUNDING, CampaignStage.COMPLETED));
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("There are no campaigns available for this sub-category.");
-
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
-    }
-
-    public List<CampaignDTO> getCampaignsByOwner(String username) {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByUserUsername(username);
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("There are no campaigns available for this user.");
-
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
-    }
-
-    public List<CampaignDTO> searchCampaigns(String searchParam) {
-        String[] searchParamArray = searchParam.trim().split("\\W+");
-        String searchPattern = String.join("|", searchParamArray);
-        List<Campaign> campaigns = this.campaignRepository.searchForCampaigns(searchPattern);
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("No campaigns found with this search parameter.");
-
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
-    }
-
-    public List<CampaignDTO> getCampaignsByFundingType(Long fundingTypeId) {
-        List<Campaign> campaigns = this.campaignRepository.findCampaignsByFundingTypeIdAndCampaignStage(fundingTypeId, CampaignStage.FUNDING);
-        if (campaigns.isEmpty())
-            throw new ResourceNotFoundException("There are no campaigns available for this funding type.");
-
-        return campaigns.stream().map(campaignMapper::toDTO).toList();
+    private List<CampaignDTO> buildResponse(List<Campaign> campaigns) {
+        return campaigns.stream()
+                .map(campaignMapper::toDTO)
+                .toList();
     }
 
 }

@@ -44,7 +44,7 @@ public class CampaignProgressUpdateServiceImpl implements CampaignProgressUpdate
 
     private CampaignProgressUpdate initializeCampaignProgressUpdate(ProgressUpdateReq progressUpdateReq) {
         CampaignProgressUpdate campaignProgressUpdate = new CampaignProgressUpdate();
-        Campaign campaign = this.campaignUtils.utilGetCampaignById(progressUpdateReq.getCampaignId());
+        Campaign campaign = this.campaignUtils.getCampaignById(progressUpdateReq.getCampaignId());
         Users user = this.userUtils.utilGetUserByUserId(progressUpdateReq.getAuthorID());
         campaignProgressUpdate.setTitle(progressUpdateReq.getTitle());
         campaignProgressUpdate.setDescription(progressUpdateReq.getDescription());
