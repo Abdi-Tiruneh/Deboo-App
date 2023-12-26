@@ -6,14 +6,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CollaborationRequest {
+public class CollaborationReq {
     @NotBlank
     private String collaboratorFullName;
 
-    @NotBlank(message = "An email for the collaborator must be provided.")
+    @NotBlank
     @Email
     private String collaboratorEmail;
 
-    @NotNull(message = "Campaign ID must be provided.")
+    @NotNull
     private Long campaignId;
 }

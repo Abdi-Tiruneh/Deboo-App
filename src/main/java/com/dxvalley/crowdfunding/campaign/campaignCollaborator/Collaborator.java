@@ -1,14 +1,19 @@
 package com.dxvalley.crowdfunding.campaign.campaignCollaborator;
 
 import com.dxvalley.crowdfunding.campaign.campaign.Campaign;
-import com.dxvalley.crowdfunding.userManager.user.Users;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
+@Table(name = "Collaborator")
+@SQLDelete(sql = "UPDATE Collaborator SET deleted = true WHERE id=?")
+@Where(clause = "deleted=false")
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,12 +23,14 @@ public class Collaborator {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(nullable = false)
     private boolean accepted;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users invitee;
+    @Column(nullable = false)
+    private String collaboratorEmail;
+
+    @Column(nullable = false)
+    private String collaboratorFullName;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "campaignId", nullable = false)
     private Campaign campaign;
@@ -34,4 +41,12 @@ public class Collaborator {
     private String invitationExpiredAt;
 
     private String respondedAt;
+
+    @JsonIgnore
+    private boolean deleted;
 }
+
+
+
+
+

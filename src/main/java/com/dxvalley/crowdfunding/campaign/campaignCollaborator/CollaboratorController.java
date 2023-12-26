@@ -1,6 +1,6 @@
 package com.dxvalley.crowdfunding.campaign.campaignCollaborator;
 
-import com.dxvalley.crowdfunding.campaign.campaignCollaborator.dto.CollaborationRequest;
+import com.dxvalley.crowdfunding.campaign.campaignCollaborator.dto.CollaborationReq;
 import com.dxvalley.crowdfunding.campaign.campaignCollaborator.dto.CollaboratorResponse;
 import com.dxvalley.crowdfunding.utils.ApiResponse;
 import jakarta.validation.Valid;
@@ -20,28 +20,28 @@ public class CollaboratorController {
 
     @GetMapping({"/{id}"})
     public ResponseEntity<CollaboratorResponse> getCollaborator(@PathVariable Long id) {
-        return ResponseEntity.ok(this.collaboratorService.getCollaboratorById(id));
+        return ResponseEntity.ok(collaboratorService.getCollaboratorById(id));
     }
 
-    @GetMapping({"/byCampaign/{campaignId}"})
+    @GetMapping({"/by-campaign/{campaignId}"})
     public ResponseEntity<List<CollaboratorResponse>> getUserCollaborators(@PathVariable Long campaignId) {
-        return ResponseEntity.ok(this.collaboratorService.getCollaboratorByCampaignId(campaignId));
+        return ResponseEntity.ok(collaboratorService.getCollaboratorByCampaignId(campaignId));
     }
 
     @PostMapping({"/invite"})
-    public ResponseEntity<CollaboratorResponse> sendInvitation(@RequestBody @Valid CollaborationRequest collaborationRequest) {
-        CollaboratorResponse collaboratorResponse = this.collaboratorService.sendInvitation(collaborationRequest);
+    public ResponseEntity<CollaboratorResponse> sendInvitation(@RequestBody @Valid CollaborationReq collaborationReq) {
+        CollaboratorResponse collaboratorResponse = collaboratorService.sendInvitation(collaborationReq);
         return ResponseEntity.status(HttpStatus.CREATED).body(collaboratorResponse);
     }
 
-    @PutMapping({"/respondToInvitation/{id}/{accepted}"})
-    public ResponseEntity<ApiResponse> acceptInvitation(@PathVariable Long id, @PathVariable boolean accepted) {
-        return this.collaboratorService.respondToCollaborationInvitation(id, accepted);
+    @PutMapping({"/respond-to-invitation/{id}"})
+    public ResponseEntity<ApiResponse> acceptInvitation(@PathVariable Long id, @RequestParam boolean accepted) {
+        return collaboratorService.respondToCollaborationInvitation(id, accepted);
     }
 
     @DeleteMapping({"/{id}"})
     public ResponseEntity<ApiResponse> deleteCollaborator(@PathVariable Long id) {
-        return this.collaboratorService.deleteCollaborator(id);
+        return collaboratorService.deleteCollaborator(id);
     }
 
 }
